@@ -5,4 +5,4 @@ coverage.out
 *.test
 .DS_Store
 .opencode/
-vpngate
+/vpngate
