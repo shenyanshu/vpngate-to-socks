@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f6fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #dbe3ef;
+      --primary: #1d4ed8;
+      --primary-soft: #dbeafe;
+      --success: #15803d;
+      --success-soft: #dcfce7;
+      --warning: #b45309;
+      --warning-soft: #fef3c7;
+      --danger: #b91c1c;
+      --danger-soft: #fee2e2;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 220px);
+      color: var(--text);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    .hero {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(219, 227, 239, 0.95);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 32px;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 900px;
+      font-size: 15px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+      min-width: 220px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .pill,
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .status-ok {
+      background: var(--success-soft);
+      color: var(--success);
+      border-color: rgba(21, 128, 61, 0.16);
+    }
+
+    .status-warn {
+      background: var(--warning-soft);
+      color: var(--warning);
+      border-color: rgba(180, 83, 9, 0.16);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      cursor: wait;
+      opacity: 0.72;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+    }
+
+    .btn-primary-soft {
+      color: var(--primary);
+      background: var(--primary-soft);
+      border: 1px solid rgba(29, 78, 216, 0.16);
+    }
+
+    .btn-secondary {
+      background: var(--surface-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-compact {
+      min-height: 36px;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .stack {
+      margin-top: 24px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .notice,
+    .error {
+      border-radius: 16px;
+      padding: 14px 16px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .notice {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: rgba(29, 78, 216, 0.16);
+    }
+
+    .error {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-color: rgba(185, 28, 28, 0.16);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(220px, 0.8fr) auto auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      padding: 0 14px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: rgba(37, 99, 235, 0.45);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin: 0 0 6px;
+    }
+
+    .stat-desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .toolbar h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .toolbar p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .table-shell {
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      scrollbar-gutter: stable both-edges;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1320px;
+    }
+
+    thead th {
+      background: #f8fbff;
+      color: #334155;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #edf2f7;
+      vertical-align: top;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    tbody tr:hover {
+      background: #f8fbff;
+    }
+
+    .name {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .server-cell {
+      min-width: 250px;
+    }
+
+    .server-actions {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .server-action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .test-feedback {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 210px;
+      max-width: 320px;
+    }
+
+    .subtext {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .test-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .test-idle {
+      background: var(--surface-soft);
+      color: var(--muted);
+      border-color: var(--border);
+    }
+
+    .test-running {
+      background: var(--warning-soft);
+      color: var(--warning);
+      border-color: rgba(180, 83, 9, 0.16);
+    }
+
+    .test-success {
+      background: var(--success-soft);
+      color: var(--success);
+      border-color: rgba(21, 128, 61, 0.16);
+    }
+
+    .test-failure {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-color: rgba(185, 28, 28, 0.16);
+    }
+
+    .action-form {
+      margin: 0;
+    }
+
+    .action-detail {
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    .action-detail:empty {
+      display: none;
+    }
+
+    .table-hint {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 22px 16px;
+    }
+
+    .toast-region {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 1000;
+      display: grid;
+      gap: 10px;
+      width: min(360px, calc(100vw - 32px));
+      pointer-events: none;
+    }
+
+    .toast {
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      border-radius: 16px;
+      padding: 14px 16px;
+      border: 1px solid transparent;
+      box-shadow: var(--shadow);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast-success {
+      background: var(--success-soft);
+      color: var(--success);
+      border-color: rgba(21, 128, 61, 0.16);
+    }
+
+    .toast-error {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-color: rgba(185, 28, 28, 0.16);
+    }
+
+    .toast-info {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: rgba(29, 78, 216, 0.16);
+    }
+
+    .vpn-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .vpn-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .vpn-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+    }
+
+    .empty h3 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .empty p {
+      margin: 0 auto;
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.7;
+    }
+
+    footer {
+      margin-top: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1180px) {
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .filters {
+	    grid-template-columns: 1fr 1fr;
+	  }
+    }
+
+    @media (max-width: 860px) {
+      .page {
+        padding: 20px 16px 32px;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        padding: 22px;
+      }
+
+      .hero-actions {
+        align-items: stretch;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .filters {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .toolbar-actions {
+        width: 100%;
+      }
+
+      .toolbar-actions .btn {
+        flex: 1;
+      }
+
+      .server-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .server-action-buttons {
+        width: 100%;
+      }
+
+      .server-action-buttons .btn,
+      .server-action-buttons .pill {
+        width: 100%;
+      }
+
+      .test-feedback {
+        min-width: 0;
+        max-width: none;
+      }
+
+      .vpn-card {
+        grid-template-columns: 1fr;
+      }
+
+      .vpn-actions {
+        justify-content: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <div class="page">
+    <section class="hero">
+      <div>
+        <h1>{{.Title}}</h1>
+        <p>{{.Description}}</p>
+        <div class="meta">
+          <span class="status-pill {{.StatusClass}}">当前状态：{{.StatusText}}</span>
+          <span class="pill">最近更新时间：{{.UpdatedAt}}</span>
+          <span class="pill">更新说明：{{.LastUpdatedReadable}}</span>
+        </div>
+      </div>
+      <div class="hero-actions">
+        {{if .SupportsRefresh}}
+        <form class="js-refresh-form" method="post" action="/refresh">
+          <button class="btn btn-primary" type="submit" data-default-label="立即刷新">立即刷新</button>
+        </form>
+        {{end}}
+        <a class="btn btn-secondary" href="/">重新查看列表</a>
+      </div>
+    </section>
+
+    <div class="stack">
+      <section class="card vpn-card">
+        <div>
+          <div class="toolbar" style="margin-bottom: 0;">
+            <div>
+              <h2>VPN 与 SOCKS5 状态</h2>
+              <p>持久连接由独立的 VPN Runner 维护，Web 页面只负责控制和状态展示。</p>
+            </div>
+            <span class="status-pill {{.VPNStatusClass}}">{{.VPNStatusText}}</span>
+          </div>
+          <div class="vpn-meta">
+            {{if .VPNCurrentNode}}
+            <span class="pill">当前节点：{{.VPNCurrentNode}}{{if .VPNCurrentIP}}（{{.VPNCurrentIP}}）{{end}}</span>
+            {{end}}
+            <span class="pill">SOCKS5：{{.VPNSocksAddress}}</span>
+            {{if .VPNConnectedSince}}
+            <span class="pill">连接时长：{{.VPNConnectedSince}}</span>
+            {{end}}
+          </div>
+          <div class="subtext" style="margin-top: 10px; font-size: 13px;">{{.VPNStatusDetail}}</div>
+          {{if .SupportsVPNControl}}
+          <div class="subtext" style="margin-top: 8px; font-size: 13px;">客户端示例：<code>socks5://&lt;宿主机IP&gt;:1080</code> ｜ 如客户端支持远端 DNS，可再尝试 <code>socks5h://</code></div>
+          {{end}}
+          {{if .SupportsVPNControl}}
+          {{if not .VPNCanDisconnect}}
+          <div class="subtext" style="margin-top: 8px; font-size: 13px;">可直接点击右侧“连接推荐节点”，系统会先刷新最新列表，再按当前筛选结果自动连接排名最高的节点。</div>
+          {{end}}
+          {{end}}
+        </div>
+        <div class="vpn-actions">
+          {{if .SupportsVPNControl}}
+          {{if not .VPNCanDisconnect}}
+          <form class="js-vpn-form" method="post" action="/vpn/connect/recommended">
+            <input type="hidden" name="q" value="{{.Query}}">
+            <input type="hidden" name="country" value="{{.SelectedCountry}}">
+            <button class="btn btn-primary" type="submit" data-default-label="连接推荐节点" data-pending-label="连接中…">连接推荐节点</button>
+          </form>
+          {{end}}
+          {{end}}
+          {{if .VPNCanDisconnect}}
+          <form class="js-vpn-form" method="post" action="/vpn/disconnect">
+            <button class="btn btn-secondary" type="submit" data-default-label="断开连接" data-pending-label="断开中…">断开连接</button>
+          </form>
+          {{end}}
+        </div>
+      </section>
+
+      {{if .Notice}}
+      <div class="notice">{{.Notice}}</div>
+      {{end}}
+      {{if .FlashError}}
+      <div class="error">{{.FlashError}}</div>
+      {{end}}
+      {{if .Error}}
+      <div class="error">{{.Error}}</div>
+      {{end}}
+
+      <section class="stats">
+        <article class="card">
+          <div class="stat-label">当前在线节点数</div>
+          <p class="stat-value">{{.TotalCount}}</p>
+          <p class="stat-desc">当前筛选结果，原始总量为 {{.SourceCount}} 条</p>
+        </article>
+        <article class="card">
+          <div class="stat-label">覆盖国家 / 地区数</div>
+          <p class="stat-value">{{.CountryCount}}</p>
+          <p class="stat-desc">用于快速了解当前节点分布范围</p>
+        </article>
+        <article class="card">
+          <div class="stat-label">平均延迟</div>
+          <p class="stat-value">{{.AveragePing}}</p>
+          <p class="stat-desc">延迟越低，通常越适合日常访问与测试</p>
+        </article>
+        <article class="card">
+          <div class="stat-label">最高速度</div>
+          <p class="stat-value">{{.HighestSpeed}}</p>
+          <p class="stat-desc">最近一次刷新结果中的最高公开速度值</p>
+        </article>
+      </section>
+
+      <section class="card">
+        <div class="toolbar" style="margin-bottom: 18px;">
+          <div>
+            <h2>快速筛选</h2>
+            <p>支持按节点名称、IP、国家、提供者或备注进行快速搜索。</p>
+          </div>
+        </div>
+        <form class="filters" method="get" action="/">
+          <div class="field">
+            <label for="q">关键词</label>
+            <input id="q" name="q" type="text" value="{{.Query}}" placeholder="例如：Japan、219.100、Academic Use Only">
+          </div>
+          <div class="field">
+            <label for="country">国家 / 地区</label>
+            <select id="country" name="country">
+              <option value="">全部国家 / 地区</option>
+              {{range .Countries}}
+              <option value="{{.Value}}" {{if eq $.SelectedCountry .Value}}selected{{end}}>{{.Label}}</option>
+              {{end}}
+            </select>
+          </div>
+          <button class="btn btn-primary" type="submit">开始筛选</button>
+          <a class="btn btn-secondary" href="/">清空条件</a>
+        </form>
+      </section>
+
+      <section class="card table-shell">
+        <div class="toolbar" style="padding: 22px 22px 0;">
+          <div>
+            <h2>在线节点列表</h2>
+            <p>数据来源：VPNGate iPhone API ｜ 最近刷新耗时：{{.RefreshDuration}} ｜ 测试方式：仅支持单节点 OpenVPN 测试</p>
+          </div>
+          <div class="toolbar-actions">
+            <span class="pill">当前结果：{{.TotalCount}} / {{.SourceCount}} 条</span>
+            <span class="pill">协议类型：OpenVPN</span>
+          </div>
+        </div>
+        <div class="table-hint">
+          <span class="pill">测试按钮已移动到“节点名称”列，首屏即可直接发起</span>
+          <span class="pill">如需查看更多字段，可横向滚动表格</span>
+        </div>
+
+        {{if .HasData}}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>排名</th>
+                <th>节点名称</th>
+                <th>国家 / 地区</th>
+                <th>IP 地址</th>
+                <th>协议</th>
+                <th>延迟</th>
+                <th>速度</th>
+                <th>在线会话</th>
+                <th>在线时长</th>
+                <th>总用户</th>
+                <th>总流量</th>
+                <th>提供者</th>
+                <th>备注</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .Rows}}
+              <tr>
+                <td>
+                  <div class="name">#{{.Rank}}</div>
+                  <div class="subtext">评分：{{.Score}}</div>
+                </td>
+                <td class="server-cell">
+                  <div class="name">{{.Name}}</div>
+                  <div class="subtext">支持直接发起单节点 OpenVPN 测试</div>
+                  <div class="server-actions" data-server-key="{{.ServerKey}}">
+                    <div class="server-action-buttons">
+                      {{if .IsVPNActive}}
+                      <span class="pill">当前 VPN 节点</span>
+                      {{else if and $.SupportsVPNControl (not $.VPNCanDisconnect)}}
+                      <form class="action-form js-vpn-form" method="post" action="/vpn/connect">
+                        <input type="hidden" name="hostname" value="{{.Name}}">
+                        <input type="hidden" name="ip" value="{{.IP}}">
+                        <input type="hidden" name="q" value="{{$.Query}}">
+                        <input type="hidden" name="country" value="{{$.SelectedCountry}}">
+                        <button class="btn btn-primary-soft btn-compact" type="submit" data-default-label="连接此节点" data-pending-label="连接中…">连接此节点</button>
+                      </form>
+                      {{end}}
+                      <form class="action-form js-test-form" method="post" action="/servers/test" data-server-key="{{.ServerKey}}">
+                        <input type="hidden" name="hostname" value="{{.Name}}">
+                        <input type="hidden" name="ip" value="{{.IP}}">
+                        <input type="hidden" name="q" value="{{$.Query}}">
+                        <input type="hidden" name="country" value="{{$.SelectedCountry}}">
+                        <button class="btn btn-secondary btn-compact" type="submit" data-default-label="测试节点">测试节点</button>
+                      </form>
+                    </div>
+                    <div class="test-feedback">
+                      <div class="test-status {{.TestClass}}" data-role="test-status">{{.TestStatus}}</div>
+                      <div class="subtext action-detail" data-role="test-detail" {{if .TestDetail}}title="{{.TestDetail}}"{{end}}>{{.TestDetail}}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="tag">{{.CountryTag}}</span>
+                  <div class="subtext">{{.Country}}</div>
+                </td>
+                <td>{{.IP}}</td>
+                <td><span class="tag">{{.Protocol}}</span></td>
+                <td>{{.Ping}}</td>
+                <td>{{.Speed}}</td>
+                <td>{{.Sessions}}</td>
+                <td>{{.Uptime}}</td>
+                <td>{{.Users}}</td>
+                <td>{{.Traffic}}</td>
+                <td>{{.Operator}}</td>
+                <td class="muted">{{.Message}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="empty">
+          <h3>暂无可展示的节点</h3>
+          <p>当前还没有成功获取到 VPNGate 节点列表。你可以点击“立即刷新”重新拉取数据，或稍后再次访问本页面。</p>
+        </div>
+        {{end}}
+      </section>
+    </div>
+
+    <footer>
+      VPNGate 节点管理页面 · {{.CurrentYear}} · 所有页面文案与运行日志均使用简体中文输出
+    </footer>
+  </div>
+  <script>
+    (() => {
+      const toastRegion = document.getElementById('toast-region');
+      const storageKey = 'vpngate:toast';
+
+      function showToast(message, kind = 'info') {
+        if (!toastRegion || !message) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${kind}`;
+        toast.textContent = message;
+        toastRegion.appendChild(toast);
+
+        requestAnimationFrame(() => toast.classList.add('show'));
+
+        window.setTimeout(() => {
+          toast.classList.remove('show');
+          window.setTimeout(() => toast.remove(), 220);
+        }, 3200);
+      }
+
+      function rememberToast(message, kind = 'info') {
+        try {
+          sessionStorage.setItem(storageKey, JSON.stringify({ message, kind }));
+        } catch (_) {}
+      }
+
+      function restoreToast() {
+        try {
+          const raw = sessionStorage.getItem(storageKey);
+          if (!raw) return;
+          sessionStorage.removeItem(storageKey);
+          const data = JSON.parse(raw);
+          if (data && data.message) {
+            showToast(data.message, data.kind || 'info');
+          }
+        } catch (_) {}
+      }
+
+      function cleanFlashParams() {
+        const url = new URL(window.location.href);
+        let changed = false;
+        ['notice', 'error'].forEach((key) => {
+          if (url.searchParams.has(key)) {
+            url.searchParams.delete(key);
+            changed = true;
+          }
+        });
+
+        if (!changed) return;
+
+        const query = url.searchParams.toString();
+        const nextURL = `${url.pathname}${query ? `?${query}` : ''}${url.hash}`;
+        window.history.replaceState({}, '', nextURL);
+      }
+
+      function updateTestUI(container, payload) {
+        if (!container || !payload) return;
+
+        const statusEl = container.querySelector('[data-role="test-status"]');
+        const detailEl = container.querySelector('[data-role="test-detail"]');
+        if (statusEl) {
+          statusEl.textContent = payload.status || '未测试';
+          statusEl.classList.remove('test-idle', 'test-running', 'test-success', 'test-failure');
+          if (payload.className) {
+            statusEl.classList.add(payload.className);
+          }
+        }
+
+        if (detailEl) {
+          detailEl.textContent = payload.detail || '';
+          if (payload.detail) {
+            detailEl.setAttribute('title', payload.detail);
+          } else {
+            detailEl.removeAttribute('title');
+          }
+        }
+      }
+
+      async function parseJSONSafe(response) {
+        const text = await response.text();
+        if (!text) return {};
+        try {
+          return JSON.parse(text);
+        } catch (_) {
+          return { ok: false, error: text.trim() || '服务器返回了无法解析的响应' };
+        }
+      }
+
+      document.querySelectorAll('.js-test-form').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          const button = form.querySelector('button[type="submit"]');
+          const actionBox = form.closest('.server-actions');
+          if (!button || !actionBox) return;
+
+          const defaultLabel = button.dataset.defaultLabel || button.textContent.trim();
+          const payload = new URLSearchParams(new FormData(form));
+          button.disabled = true;
+          button.textContent = '测试中…';
+          updateTestUI(actionBox, {
+            status: '测试中',
+            className: 'test-running',
+            detail: 'OpenVPN 正在尝试建立连接，请耐心等待测试完成',
+          });
+
+          try {
+            const response = await fetch(form.action, {
+              method: 'POST',
+              body: payload,
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'fetch',
+              },
+            });
+            const data = await parseJSONSafe(response);
+
+            if (data.test) {
+              updateTestUI(actionBox, data.test);
+            }
+
+            if (!response.ok || !data.ok) {
+              throw new Error(data.error || '节点测试失败，请稍后重试');
+            }
+
+            showToast(data.notice || '节点测试已完成', 'success');
+          } catch (error) {
+            const message = error instanceof Error ? error.message : '节点测试失败，请稍后重试';
+            updateTestUI(actionBox, {
+              status: '测试失败',
+              className: 'test-failure',
+              detail: message,
+            });
+            showToast(message, 'error');
+          } finally {
+            button.disabled = false;
+            button.textContent = defaultLabel;
+          }
+        });
+      });
+
+      document.querySelectorAll('.js-refresh-form').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          const button = form.querySelector('button[type="submit"]');
+          if (!button) return;
+
+          const defaultLabel = button.dataset.defaultLabel || button.textContent.trim();
+          button.disabled = true;
+          button.textContent = '刷新中…';
+
+          try {
+            const response = await fetch(form.action, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'fetch',
+              },
+            });
+            const data = await parseJSONSafe(response);
+
+            if (!response.ok || !data.ok) {
+              throw new Error(data.error || '刷新失败，请稍后重试');
+            }
+
+            rememberToast(data.notice || '节点数据已刷新', 'success');
+            window.location.reload();
+          } catch (error) {
+            const message = error instanceof Error ? error.message : '刷新失败，请稍后重试';
+            showToast(message, 'error');
+          } finally {
+            button.disabled = false;
+            button.textContent = defaultLabel;
+          }
+        });
+      });
+
+      document.querySelectorAll('.js-vpn-form').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          const button = form.querySelector('button[type="submit"]');
+          if (!button) return;
+
+          const defaultLabel = button.dataset.defaultLabel || button.textContent.trim();
+          const pendingLabel = button.dataset.pendingLabel || '处理中…';
+          const payload = new URLSearchParams(new FormData(form));
+
+          button.disabled = true;
+          button.textContent = pendingLabel;
+
+          try {
+            const response = await fetch(form.action, {
+              method: 'POST',
+              body: payload,
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'fetch',
+              },
+            });
+            const data = await parseJSONSafe(response);
+
+            if (!response.ok || !data.ok) {
+              throw new Error(data.error || 'VPN 操作失败，请稍后重试');
+            }
+
+            rememberToast(data.notice || 'VPN 操作已执行', 'success');
+            window.location.reload();
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'VPN 操作失败，请稍后重试';
+            showToast(message, 'error');
+          } finally {
+            button.disabled = false;
+            button.textContent = defaultLabel;
+          }
+        });
+      });
+
+      restoreToast();
+      cleanFlashParams();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+## macOS 本地开发使用（Docker Desktop）。
+## Web 与 Runner 分离成两个容器，避免 OpenVPN 改写 Runner 路由时影响 UI 访问。
+## 注意：容器运行在 Docker Desktop 的 Linux VM 中，runner 使用的是 VM/容器侧的 TUN，不是 macOS 宿主机上的 utun。
+services:
+  vpngate-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vpngate-local:dev
+    container_name: vpngate-web-macos
+    init: true
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      RUNNER_API_URL: "http://vpngate-runner:18081"
+    ports:
+      - "8082:8080"
+    depends_on:
+      - vpngate-runner
+    command: ["/usr/local/bin/vpngate-web"]
+
+  vpngate-runner:
+    # macOS 场景：runner 仍运行在 Linux 容器里，依赖 Docker Desktop VM 内的网络能力。
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vpngate-local:dev
+    container_name: vpngate-runner-macos
+    init: true
+    restart: unless-stopped
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    environment:
+      RUNNER_CONTROL_ADDR: ":18081"
+      SOCKS_LISTEN_ADDR: "0.0.0.0:1080"
+      SOCKS_BYPASS_CIDRS: "${SOCKS_BYPASS_CIDRS:-192.168.31.0/24}"
+      AUTO_CONNECT: "${AUTO_CONNECT:-true}"
+      MONITOR_URL: "${MONITOR_URL:-https://www.gstatic.com/generate_204}"
+      MONITOR_FAILURE_THRESHOLD: "${MONITOR_FAILURE_THRESHOLD:-3}"
+      TCP_PROBE_ADDRESS: "${TCP_PROBE_ADDRESS:-}"
+      TCP_PROBE_TIMEOUT: "${TCP_PROBE_TIMEOUT:-3s}"
+      OPENVPN_CONNECT_TIMEOUT: "${OPENVPN_CONNECT_TIMEOUT:-30s}"
+      MONITOR_INTERVAL: "${MONITOR_INTERVAL:-20s}"
+      MONITOR_TIMEOUT: "${MONITOR_TIMEOUT:-6s}"
+      FETCH_TIMEOUT: "${FETCH_TIMEOUT:-30s}"
+      CONNECT_COOLDOWN: "${CONNECT_COOLDOWN:-5s}"
+      MONITOR_STABLE_AFTER: "${MONITOR_STABLE_AFTER:-10s}"
+      NODE_QUARANTINE: "${NODE_QUARANTINE:-5m}"
+      BYPASS_ROUTE_TABLE: "${BYPASS_ROUTE_TABLE:-100}"
+      BYPASS_FWMARK: "${BYPASS_FWMARK:-1}"
+    command: ["/usr/local/bin/vpngate-runner"]
+    ports:
+      - "10080:1080"

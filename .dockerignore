@@ -1,0 +1,13 @@
+.git
+.gitignore
+.opencode/
+.vscode/
+.idea/
+bin/
+dist/
+tmp/
+coverage.out
+*.test
+*.log
+.DS_Store
+vpngate
