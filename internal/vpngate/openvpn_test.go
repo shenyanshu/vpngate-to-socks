@@ -81,7 +81,7 @@ func TestBuildOpenVPNTestArgsIncludesFastFailTimeout(t *testing.T) {
 	args := BuildOpenVPNTestArgs("/tmp/example.ovpn", "")
 
 	assertArgValue(t, args, "--connect-timeout", "10")
-	assertArgValue(t, args, "--connect-retry-max", "1")
+	assertArgValue(t, args, "--connect-retry-max", "3")
 }
 
 func assertArgValue(t *testing.T, args []string, key, value string) {

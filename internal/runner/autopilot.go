@@ -298,19 +298,19 @@ func (r *Runner) runMonitorCheck(parent context.Context) {
 		return
 	}
 
-	r.logger.Printf("Runner VPN 路径探活失败：%v", vpnErr)
+	r.logger.Printf("Runner SOCKS 路径探活失败：%v", vpnErr)
 	if bypassErr == nil {
 		current := r.currentSnapshot()
 		if current != nil {
 			failures := r.incrementMonitorFailureCount()
 			threshold := r.autoConfig.MonitorFailureThreshold
 			if failures < threshold {
-				r.logger.Printf("Runner 将继续观察当前节点：%s（%s），已连续探活失败 %d/%d", current.HostName, current.IP, failures, threshold)
+				r.logger.Printf("Runner 将继续观察当前节点：%s（%s），已连续 SOCKS 探活失败 %d/%d", current.HostName, current.IP, failures, threshold)
 				return
 			}
 
 			r.resetMonitorFailureCount()
-			reason := fmt.Sprintf("VPN 探活失败，但直连站点 %s 成功", r.autoConfig.MonitorURL)
+			reason := fmt.Sprintf("SOCKS 探活失败，但直连站点 %s 成功", r.autoConfig.MonitorURL)
 			r.logger.Printf("Runner 判定节点失效：%s（%s），原因：%s", current.HostName, current.IP, reason)
 			r.markQuarantine(*current, reason)
 			if err := r.disconnectForRecovery(); err != nil {
@@ -432,20 +432,40 @@ func (r *Runner) probeMonitor(ctx context.Context, bypass bool) error {
 		return r.probeMonitorBypass(ctx, parsedURL)
 	}
 
+	return r.probeMonitorViaSOCKS(ctx, parsedURL)
+}
+
+func (r *Runner) probeMonitorViaSOCKS(ctx context.Context, parsedURL *url.URL) error {
+	if r.socks == nil {
+		return fmt.Errorf("SOCKS5 代理未启动")
+	}
+
+	proxyAddr := strings.TrimSpace(r.socks.DialAddr())
+	if proxyAddr == "" {
+		return fmt.Errorf("SOCKS5 代理地址为空")
+	}
+
+	transport := &http.Transport{
+		Proxy:               http.ProxyURL(&url.URL{Scheme: "socks5", Host: proxyAddr}),
+		DisableKeepAlives:   true,
+		ForceAttemptHTTP2:   false,
+		TLSHandshakeTimeout: r.autoConfig.MonitorTimeout,
+	}
+	client := &http.Client{Timeout: r.autoConfig.MonitorTimeout, Transport: transport}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsedURL.String(), nil)
 	if err != nil {
 		return err
 	}
 
-	client := &http.Client{Timeout: r.autoConfig.MonitorTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("通过 SOCKS 探活失败: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("探活网站返回异常状态: %s", resp.Status)
+		return fmt.Errorf("SOCKS 探活网站返回异常状态: %s", resp.Status)
 	}
 
 	return nil

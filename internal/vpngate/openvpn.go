@@ -143,7 +143,7 @@ func BuildOpenVPNTestArgs(configPath, cipher string) []string {
 		"--verb", "4",
 		"--config", configPath,
 		"--script-security", "2",
-		"--connect-retry-max", "1",
+		"--connect-retry-max", "3",
 		"--connect-timeout", "10",
 		"--route-nopull",
 		"--data-ciphers", cipher,

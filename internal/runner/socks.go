@@ -59,6 +59,28 @@ func (s *SOCKSServer) ListenAddr() string {
 	return s.listenAddr
 }
 
+func (s *SOCKSServer) DialAddr() string {
+	if s == nil || s.listener == nil {
+		return ""
+	}
+
+	tcpAddr, ok := s.listener.Addr().(*net.TCPAddr)
+	if !ok {
+		return s.listener.Addr().String()
+	}
+
+	host := tcpAddr.IP.String()
+	if tcpAddr.IP == nil || tcpAddr.IP.IsUnspecified() {
+		if tcpAddr.IP != nil && tcpAddr.IP.To4() == nil {
+			host = "::1"
+		} else {
+			host = "127.0.0.1"
+		}
+	}
+
+	return net.JoinHostPort(host, strconv.Itoa(tcpAddr.Port))
+}
+
 func (s *SOCKSServer) Close() error {
 	if s.listener == nil {
 		return nil

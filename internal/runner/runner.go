@@ -41,7 +41,7 @@ type Runner struct {
 	configPath              string
 	disconnectRequested     bool
 	bypassCIDRs             []string
-	localCIDRs              []string
+	localCIDRs              []localBypassRoute
 	originalGateway         string
 	originalInterface       string
 	autoPaused              bool
@@ -58,6 +58,18 @@ type Runner struct {
 type openVPNScanResult struct {
 	lines []string
 	err   error
+}
+
+type localBypassRoute struct {
+	CIDR      string
+	Interface string
+}
+
+type bypassRouteSpec struct {
+	CIDR      string
+	Gateway   string
+	Interface string
+	Direct    bool
 }
 
 func New(logger *log.Logger, socksListenAddr string, bypassCIDRs []string, autoConfig AutoPilotConfig) (*Runner, error) {
@@ -183,7 +195,7 @@ func (r *Runner) Connect(server vpngate.Server) error {
 		r.mu.Lock()
 		r.originalGateway = gateway
 		r.originalInterface = iface
-		r.localCIDRs = sanitizeBypassCIDRs(localCIDRs)
+		r.localCIDRs = sanitizeLocalBypassRoutes(localCIDRs)
 		r.mu.Unlock()
 	}
 
@@ -600,19 +612,20 @@ func (r *Runner) setLastError(detail string) {
 func (r *Runner) applyBypassRoutes() error {
 	r.mu.RLock()
 	bypassCIDRs := append([]string(nil), r.bypassCIDRs...)
-	localCIDRs := append([]string(nil), r.localCIDRs...)
+	localCIDRs := append([]localBypassRoute(nil), r.localCIDRs...)
 	gateway := r.originalGateway
 	iface := r.originalInterface
 	autoConfig := r.autoConfig
 	r.mu.RUnlock()
 
-	bypassCIDRs = sanitizeBypassCIDRs(append(bypassCIDRs, localCIDRs...))
+	bypassCIDRs = sanitizeBypassCIDRs(bypassCIDRs)
+	localCIDRs = sanitizeLocalBypassRoutes(localCIDRs)
 
-	if len(bypassCIDRs) == 0 && !autoConfig.Enabled {
+	if len(bypassCIDRs) == 0 && len(localCIDRs) == 0 && !autoConfig.Enabled {
 		return nil
 	}
 
-	if strings.TrimSpace(gateway) == "" || strings.TrimSpace(iface) == "" {
+	if (autoConfig.Enabled || len(bypassCIDRs) > 0) && (strings.TrimSpace(gateway) == "" || strings.TrimSpace(iface) == "") {
 		return fmt.Errorf("缺少原始网关或接口信息，无法应用局域网保留路由")
 	}
 
@@ -627,23 +640,58 @@ func (r *Runner) applyBypassRoutes() error {
 		}
 	}
 
-	if len(bypassCIDRs) == 0 {
+	routeSpecs := buildBypassRouteSpecs(bypassCIDRs, localCIDRs, gateway, iface)
+	if len(routeSpecs) == 0 {
 		return nil
 	}
 
-	for _, cidr := range bypassCIDRs {
-		cmd := exec.Command(ipExecutable, "route", "replace", cidr, "via", gateway, "dev", iface)
+	for _, spec := range routeSpecs {
+		cmd := exec.Command(ipExecutable, buildRouteReplaceArgs(spec)...)
 		if output, err := cmd.CombinedOutput(); err != nil {
 			trimmed := strings.TrimSpace(string(output))
 			if trimmed == "" {
-				return fmt.Errorf("为 %s 应用保留路由失败: %w", cidr, err)
+				return fmt.Errorf("为 %s 应用保留路由失败: %w", spec.CIDR, err)
 			}
 
-			return fmt.Errorf("为 %s 应用保留路由失败: %s", cidr, trimmed)
+			return fmt.Errorf("为 %s 应用保留路由失败: %s", spec.CIDR, trimmed)
 		}
 	}
 
 	return nil
+}
+
+func buildBypassRouteSpecs(bypassCIDRs []string, localCIDRs []localBypassRoute, gateway, originalInterface string) []bypassRouteSpec {
+	specs := make([]bypassRouteSpec, 0, len(bypassCIDRs)+len(localCIDRs))
+
+	for _, cidr := range sanitizeBypassCIDRs(bypassCIDRs) {
+		if strings.TrimSpace(originalInterface) == "" || strings.TrimSpace(gateway) == "" {
+			continue
+		}
+
+		specs = append(specs, bypassRouteSpec{
+			CIDR:      cidr,
+			Gateway:   gateway,
+			Interface: originalInterface,
+		})
+	}
+
+	for _, localRoute := range sanitizeLocalBypassRoutes(localCIDRs) {
+		specs = append(specs, bypassRouteSpec{
+			CIDR:      localRoute.CIDR,
+			Interface: localRoute.Interface,
+			Direct:    true,
+		})
+	}
+
+	return specs
+}
+
+func buildRouteReplaceArgs(spec bypassRouteSpec) []string {
+	if spec.Direct {
+		return []string{"route", "replace", spec.CIDR, "dev", spec.Interface, "scope", "link"}
+	}
+
+	return []string{"route", "replace", spec.CIDR, "via", spec.Gateway, "dev", spec.Interface}
 }
 
 func ensureBypassPolicyRouting(ipExecutable, gateway, iface string, table, mark int) error {
@@ -751,13 +799,13 @@ func resolveIPExecutable() (string, error) {
 	return "", fmt.Errorf("未找到 ip 命令，无法设置局域网保留路由")
 }
 
-func discoverLocalCIDRs() ([]string, error) {
+func discoverLocalCIDRs() ([]localBypassRoute, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return nil, fmt.Errorf("读取本地网络接口失败: %w", err)
 	}
 
-	var cidrs []string
+	var routes []localBypassRoute
 	for _, iface := range interfaces {
 		if iface.Flags&net.FlagUp == 0 {
 			continue
@@ -788,11 +836,11 @@ func discoverLocalCIDRs() ([]string, error) {
 			if err != nil {
 				return nil, fmt.Errorf("规范化接口 %s 网段失败: %w", iface.Name, err)
 			}
-			cidrs = append(cidrs, networkCIDR)
+			routes = append(routes, localBypassRoute{CIDR: networkCIDR, Interface: iface.Name})
 		}
 	}
 
-	return sanitizeBypassCIDRs(cidrs), nil
+	return sanitizeLocalBypassRoutes(routes), nil
 }
 
 func normalizeCIDR(prefix *net.IPNet) (string, error) {
@@ -817,6 +865,29 @@ func sanitizeBypassCIDRs(values []string) []string {
 		}
 
 		cleaned = append(cleaned, trimmed)
+	}
+
+	return cleaned
+}
+
+func sanitizeLocalBypassRoutes(values []localBypassRoute) []localBypassRoute {
+	cleaned := make([]localBypassRoute, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+
+	for _, value := range values {
+		cidr := strings.TrimSpace(value.CIDR)
+		iface := strings.TrimSpace(value.Interface)
+		if cidr == "" || iface == "" {
+			continue
+		}
+
+		key := iface + "\x00" + cidr
+		if _, ok := seen[key]; ok {
+			continue
+		}
+
+		seen[key] = struct{}{}
+		cleaned = append(cleaned, localBypassRoute{CIDR: cidr, Interface: iface})
 	}
 
 	return cleaned

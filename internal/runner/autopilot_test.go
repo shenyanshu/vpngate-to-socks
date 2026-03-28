@@ -1,8 +1,13 @@
 package runner
 
 import (
+	"bytes"
 	"context"
+	"log"
 	"net"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -135,5 +140,53 @@ func TestRunMonitorCheckRequiresConsecutiveFailuresBeforeSwitch(t *testing.T) {
 	r.resetMonitorFailureCount()
 	if r.monitorFailureCount != 0 {
 		t.Fatalf("monitorFailureCount = %d, want 0", r.monitorFailureCount)
+	}
+}
+
+func TestProbeMonitorViaSOCKS(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer target.Close()
+
+	var logBuffer bytes.Buffer
+	logger := log.New(&logBuffer, "", 0)
+
+	socks, err := newSOCKSServer(logger, "127.0.0.1:0", func() bool { return true })
+	if err != nil {
+		t.Fatalf("newSOCKSServer() error = %v", err)
+	}
+	defer socks.Close()
+
+	r := &Runner{
+		autoConfig: AutoPilotConfig{MonitorURL: target.URL, MonitorTimeout: 2 * time.Second},
+		socks:      socks,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := r.probeMonitor(ctx, false); err != nil {
+		t.Fatalf("probeMonitor() error = %v", err)
+	}
+
+	if !strings.Contains(logBuffer.String(), "SOCKS5 收到连接") {
+		t.Fatalf("expected SOCKS server to receive a connection, logs = %q", logBuffer.String())
+	}
+}
+
+func TestSOCKSServerDialAddrUsesLoopbackForWildcardListener(t *testing.T) {
+	socks, err := newSOCKSServer(log.New(&bytes.Buffer{}, "", 0), "0.0.0.0:0", func() bool { return true })
+	if err != nil {
+		t.Fatalf("newSOCKSServer() error = %v", err)
+	}
+	defer socks.Close()
+
+	dialAddr := socks.DialAddr()
+	if strings.HasPrefix(dialAddr, "0.0.0.0:") {
+		t.Fatalf("DialAddr() = %q, should use loopback host", dialAddr)
+	}
+	if !strings.HasPrefix(dialAddr, "127.0.0.1:") {
+		t.Fatalf("DialAddr() = %q, want loopback IPv4 address", dialAddr)
 	}
 }
